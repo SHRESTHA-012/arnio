@@ -11,8 +11,9 @@ import shutil
 import tempfile
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
+from typing import cast
 
-from ._core import (  # type: ignore
+from ._core import (
     _CsvChunkReader,
     _CsvConfig,
     _CsvReader,
@@ -728,7 +729,7 @@ def scan_csv(
             delimiter=delimiter,
             sample_rows=100 if sample_size is None else sample_size,
         ) as native_path:
-            return reader.scan_schema(native_path)
+            return cast(dict[str, str], reader.scan_schema(native_path))  # type: ignore[redundant-cast]
     except RuntimeError as e:
         raise CsvReadError(str(e)) from e
 
