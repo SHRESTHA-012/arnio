@@ -551,6 +551,102 @@ class TestReadCsv:
         assert " score " in schema
         assert " active " in schema
 
+    # ------------------------------------------------------------------
+    # Whitespace-duplicate header tests (issue #117)
+    # ------------------------------------------------------------------
+
+    def test_exact_duplicate_headers_rejected(self, tmp_path):
+        """Exact duplicate column names are always rejected."""
+        csv_path = tmp_path / "dup.csv"
+        csv_path.write_text("a,a\n1,2\n")
+        with pytest.raises(ar.CsvReadError, match="[Dd]uplicate"):
+            ar.read_csv(csv_path)
+
+    def test_whitespace_duplicate_headers_rejected_default_trim(self, tmp_path):
+        """Headers differing only by whitespace are rejected (trim_headers=True)."""
+        csv_path = tmp_path / "ws_dup.csv"
+        csv_path.write_text("a , a\n1,2\n")
+        with pytest.raises(
+            ar.CsvReadError,
+            match="[Dd]uplicate column name",
+        ):
+            ar.read_csv(csv_path)
+
+    def test_whitespace_duplicate_headers_rejected_no_trim(self, tmp_path):
+        """Headers differing only by whitespace are rejected even with trim_headers=False."""
+        csv_path = tmp_path / "ws_dup_notrim.csv"
+        csv_path.write_text("a , a\n1,2\n")
+        with pytest.raises(
+            ar.CsvReadError,
+            match="[Dd]uplicate column name",
+        ):
+            ar.read_csv(csv_path, trim_headers=False)
+
+    def test_tab_whitespace_duplicate_headers_rejected(self, tmp_path):
+        """Tab-padded headers that collapse to the same name are rejected."""
+        csv_path = tmp_path / "tab_dup.csv"
+        csv_path.write_bytes(b"a\t,a\n1,2\n")  # "a\t" vs "a" after trim
+        with pytest.raises(
+            ar.CsvReadError,
+            match="[Dd]uplicate column name",
+        ):
+            ar.read_csv(csv_path)
+
+    def test_mixed_whitespace_duplicate_headers_rejected(self, tmp_path):
+        """Mixed leading/trailing spaces and tabs are caught."""
+        csv_path = tmp_path / "mixed_ws_dup.csv"
+        # " a " and "\ta\t" both trim to "a"
+        csv_path.write_bytes(b" a , \ta\t\n1,2\n")
+        with pytest.raises(
+            ar.CsvReadError,
+            match="[Dd]uplicate column name",
+        ):
+            ar.read_csv(csv_path)
+
+    def test_unique_headers_with_whitespace_accepted(self, tmp_path):
+        """Headers that are unique after trimming are accepted normally."""
+        csv_path = tmp_path / "unique_ws.csv"
+        csv_path.write_text(" name , age \n1,2\n")
+        frame = ar.read_csv(csv_path)
+        assert frame.columns == ["name", "age"]
+
+    def test_whitespace_duplicate_scan_csv_rejected(self, tmp_path):
+        """scan_csv also rejects whitespace-duplicate headers."""
+        csv_path = tmp_path / "scan_ws_dup.csv"
+        csv_path.write_text("a , a\n1,2\n")
+        with pytest.raises(
+            ar.CsvReadError,
+            match="[Dd]uplicate column name",
+        ):
+            ar.scan_csv(csv_path)
+
+    def test_whitespace_duplicate_scan_csv_no_trim_rejected(self, tmp_path):
+        """scan_csv with trim_headers=False still rejects whitespace-duplicate headers."""
+        csv_path = tmp_path / "scan_ws_dup_notrim.csv"
+        csv_path.write_text("a , a\n1,2\n")
+        with pytest.raises(
+            ar.CsvReadError,
+            match="[Dd]uplicate column name",
+        ):
+            ar.scan_csv(csv_path, trim_headers=False)
+
+    def test_whitespace_duplicate_chunked_rejected(self, tmp_path):
+        """read_csv_chunked also rejects whitespace-duplicate headers."""
+        csv_path = tmp_path / "chunked_ws_dup.csv"
+        csv_path.write_text("a , a\n1,2\n")
+        with pytest.raises(
+            ar.CsvReadError,
+            match="[Dd]uplicate column name",
+        ):
+            list(ar.read_csv_chunked(str(csv_path)))
+
+    def test_whitespace_duplicate_error_message_names_column(self, tmp_path):
+        """The error message includes the colliding column name."""
+        csv_path = tmp_path / "named_dup.csv"
+        csv_path.write_text("score , score\n1,2\n")
+        with pytest.raises(ar.CsvReadError, match="score"):
+            ar.read_csv(csv_path)
+
     def test_non_standard_extension_accepted(self, tmp_path):
         """Non-standard extensions no longer raise ValueError (fixes #34)."""
         for ext in (".dat", ".log", ".data", ".pipe"):
