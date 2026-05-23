@@ -733,6 +733,39 @@ def strip_whitespace(
     return ArFrame(result)
 
 
+def normalize_whitespace(frame, columns=None):
+    """Collapse internal whitespace runs to a single space in string columns.
+    Also strips leading and trailing whitespace.
+
+    Parameters
+    ----------
+    frame : ArFrame
+        Input data frame.
+    columns : list of str, optional
+        Column names to process. Defaults to all string (object) columns.
+
+    Returns
+    -------
+    ArFrame
+        New frame with normalized whitespace in the specified columns.
+
+    Examples
+    --------
+    >>> frame = ar.read_csv("data.csv")
+    >>> clean = ar.pipeline(frame, [("normalize_whitespace",)])
+    """
+    is_arframe = not isinstance(frame, pd.DataFrame)
+    df = to_pandas(frame) if is_arframe else frame.copy()
+    cols = (
+        list(columns)
+        if columns is not None
+        else list(df.select_dtypes(include=["object", "string"]).columns)
+    )
+    for col in cols:
+        df[col] = df[col].str.replace(r"\s+", " ", regex=True).str.strip()
+    return from_pandas(df) if is_arframe else df
+
+
 def parse_bool_strings(
     frame: ArFrame,
     *,
