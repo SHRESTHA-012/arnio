@@ -378,46 +378,68 @@ class DataQualityReport:
             "quality_score": self.quality_score,
             "score_components": self.score_components,
             "columns": {
-                name: column.to_dict(redact_sample_values=redact_sample_values)
-                for name, column in self.columns.items()
+                name: self.columns[name].to_dict(
+                    redact_sample_values=redact_sample_values
+                )
+                for name in sorted(self.columns)
                 if name not in exclude_columns
             },
             "suggestions": [
                 {
                     "step": s[0],
-                    "kwargs": (
-                        {
-                            k: v
-                            for k, v in dict(s[1]).items()
-                            if k not in exclude_columns
-                        }
-                        if s[0] == "cast_types"
-                        else {
-                            key: (
-                                [item for item in value if item not in exclude_columns]
-                                if key in {"subset", "columns"}
-                                and isinstance(value, list)
-                                else (
-                                    {
-                                        col_name: col_type
-                                        for col_name, col_type in value.items()
-                                        if col_name not in exclude_columns
-                                    }
-                                    if key == "cast_types" and isinstance(value, dict)
-                                    else value
-                                )
+                    "kwargs": {
+                        key: (
+                            [item for item in value if item not in exclude_columns]
+                            if key in {"subset", "columns"} and isinstance(value, list)
+                            else (
+                                {
+                                    col_name: col_type
+                                    for col_name, col_type in value.items()
+                                    if col_name not in exclude_columns
+                                }
+                                if key == "cast_types" and isinstance(value, dict)
+                                else value
                             )
-                            for key, value in dict(s[1]).items()
-                        }
-                    ),
+                        )
+                        for key, value in sorted(dict(s[1]).items())
+                        if key not in exclude_columns
+                    },
                     "confidence_score": getattr(s, "confidence_score", None),
                     "confidence_reason": _redact_reason(
                         getattr(s, "confidence_reason", None)
                     ),
                 }
-                for s in self.suggestions
+                for s in sorted(
+                    self.suggestions,
+                    key=lambda item: (
+                        item[0],
+                        json.dumps(item[1], sort_keys=True, default=str),
+                    ),
+                )
             ],
         }
+
+    def __repr__(self) -> str:
+        """Deterministic concise representation for terminals and notebooks."""
+
+        column_names = sorted(self.columns)
+
+        preview = ", ".join(column_names[:5])
+
+        if len(column_names) > 5:
+            preview += ", ..."
+
+        return (
+            "DataQualityReport("
+            f"rows={self.row_count}, "
+            f"columns={self.column_count}, "
+            f"duplicates={self.duplicate_rows}, "
+            f"quality_score={self.quality_score:.2f}, "
+            f"column_names=[{preview}]"
+            ")"
+        )
+
+    __str__ = __repr__
 
     def to_json(
         self,
