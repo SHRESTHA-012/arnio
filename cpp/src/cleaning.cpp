@@ -304,11 +304,14 @@ Frame drop_duplicates(const Frame& frame, const std::optional<std::vector<std::s
     if (subset.has_value() && subset->empty()) {
         throw std::invalid_argument("drop_duplicates subset cannot be empty");
     }
+
+    auto col_indices = resolve_subset(frame, subset);
+    if (keep != "first" && keep != "last" && keep != "none") {
+        throw std::invalid_argument("keep must be 'first', 'last', or 'none'");
+    }
     if (frame.num_cols() == 0) {
         return frame.clone();
     }
-
-    auto col_indices = resolve_subset(frame, subset);
     RowContext ctx{&frame, &col_indices};
     RowHash hash(ctx);
     RowEqual eq(ctx);

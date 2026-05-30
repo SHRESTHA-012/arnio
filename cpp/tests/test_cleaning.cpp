@@ -464,3 +464,17 @@ TEST_CASE("drop_duplicates zero-col zero-row frame stays empty", "[cleaning][ded
     REQUIRE(result.num_rows() == 0);
     REQUIRE(result.num_cols() == 0);
 }
+
+// ── drop_duplicates: zero-column invalid input regression ────────────────────
+
+TEST_CASE("drop_duplicates zero-col missing subset column still throws",
+          "[cleaning][dedup][zero-col]") {
+    Frame f = make_zero_col_frame(3);
+    REQUIRE_THROWS_AS(drop_duplicates(f, std::vector<std::string>{"missing"}, "first"),
+                      std::invalid_argument);
+}
+
+TEST_CASE("drop_duplicates zero-col invalid keep still throws", "[cleaning][dedup][zero-col]") {
+    Frame f = make_zero_col_frame(3);
+    REQUIRE_THROWS_AS(drop_duplicates(f, std::nullopt, "invalid"), std::invalid_argument);
+}
