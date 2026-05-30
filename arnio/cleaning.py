@@ -468,8 +468,6 @@ def drop_duplicates(
     >>> unique = ar.drop_duplicates(frame, subset=["name"], keep="first")
     """
     frame, _ = _validate_frame(frame)
-    if frame.shape[1] == 0:
-        return from_pandas(to_pandas(frame))
 
     if subset is not None:
         subset = _validate_column_sequence(subset, argument_name="subset")
@@ -491,6 +489,8 @@ def drop_duplicates(
     keep_arg = "none" if keep is False else keep
     if keep_arg not in {"first", "last", "none"}:
         raise ValueError("keep must be one of 'first', 'last', 'none', or False")
+    if frame.shape[1] == 0:
+        return from_pandas(to_pandas(frame))
     result = _drop_duplicates(frame._frame, subset=subset, keep=keep_arg)
     return ArFrame(result)
 
