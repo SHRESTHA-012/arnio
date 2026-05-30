@@ -432,9 +432,7 @@ TEST_CASE("drop_duplicates NaN payloads treated as equal (keep=none)", "[cleanin
     REQUIRE(result.column("v").at(0) == CellValue(double(3.0)));
 }
 
-static Frame make_zero_col_frame(size_t num_rows) {
-    return Frame(num_rows);
-}
+static Frame make_zero_col_frame(size_t num_rows) { return Frame(num_rows); }
 
 TEST_CASE("drop_duplicates zero-col frame keep=first preserves row count",
           "[cleaning][dedup][zero-col]") {
@@ -460,8 +458,7 @@ TEST_CASE("drop_duplicates zero-col frame keep=none preserves row count",
     REQUIRE(result.num_cols() == 0);
 }
 
-TEST_CASE("drop_duplicates zero-col zero-row frame stays empty",
-          "[cleaning][dedup][zero-col]") {
+TEST_CASE("drop_duplicates zero-col zero-row frame stays empty", "[cleaning][dedup][zero-col]") {
     Frame f = make_zero_col_frame(0);
     Frame result = drop_duplicates(f, std::nullopt, "first");
     REQUIRE(result.num_rows() == 0);
