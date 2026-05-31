@@ -471,7 +471,7 @@ TEST_CASE("drop_duplicates zero-col missing subset column still throws",
           "[cleaning][dedup][zero-col]") {
     Frame f = make_zero_col_frame(3);
     REQUIRE_THROWS_WITH(drop_duplicates(f, std::vector<std::string>{"missing"}, "first"),
-                      Catch::Matchers::ContainsSubstring("Column not found: missing"));
+                        "Column not found: missing");
 }
 
 TEST_CASE("drop_duplicates zero-col invalid keep still throws", "[cleaning][dedup][zero-col]") {
